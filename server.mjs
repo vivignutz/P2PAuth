@@ -8,7 +8,7 @@ import dotenv from 'dotenv';
 
 dotenv.config(); 
 
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || 3005;
 const app = express();
 
 // Middleware to parse form data
@@ -20,7 +20,7 @@ const dbURI = process.env.DB_CONNECTION_STRING;
 
 const connectToDatabase = async () => {
     try {
-        await mongoose.connect(dbURI, { useNewUrlParser: true, useUnifiedTopology: true });
+        await mongoose.connect(dbURI);
         console.log("Connected to MongoDB database");
     } catch (error) {
         console.error('Error connecting to the database:', error.message);
