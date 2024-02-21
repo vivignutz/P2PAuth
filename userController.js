@@ -1,25 +1,30 @@
 // userController.js
 import express from 'express';
-import { createUser, getUserByEmail, deleteUserByEmail } from './userService.js';
-import { generateToken } from './authentication.js';
+import mongoose from 'mongoose';
+
+const UserSchema = new mongoose.Schema({
+    username: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
+    password: { type: String, required: true },
+    role: { type: String, enum: ['admin', 'user'], default: 'user' }
+});
+
+const UserModel = mongoose.model('User', UserSchema);
 
 export async function registerUser(req, res) {
     try {
         const { email, password, role } = req.body;
-        
+
         // Check if user already exists
-        const existingUser = await getUserByEmail(email);
+        const existingUser = await UserModel.findOne({ email });
         if (existingUser) {
             return res.status(400).json({ message: 'User already exists' });
         }
 
         // Create user
-        const newUser = await createUser({ email, password, role });
-        
-        // Generate token
-        const token = generateToken(newUser._id);
-        
-        res.status(201).json({ message: 'User registered successfully', token });
+        const newUser = await UserModel.create({ email, password, role });
+
+        res.status(201).json({ message: 'User registered successfully', newUser });
     } catch (error) {
         console.error('Error registering user:', error);
         res.status(500).json({ message: 'Internal server error' });
@@ -31,7 +36,7 @@ export async function loginUser(req, res) {
         const { email, password } = req.body;
 
         // Check if user exists
-        const user = await getUserByEmail(email);
+        const user = await UserModel.findOne({ email });
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
@@ -42,10 +47,7 @@ export async function loginUser(req, res) {
             return res.status(401).json({ message: 'Invalid password' });
         }
 
-        // Generate token
-        const token = generateToken(user._id);
-
-        res.status(200).json({ message: 'Login successful', token });
+        res.status(200).json({ message: 'Login successful' });
     } catch (error) {
         console.error('Error logging in user:', error);
         res.status(500).json({ message: 'Internal server error' });
@@ -57,13 +59,13 @@ export async function deleteUser(req, res) {
         const email = req.body.email;
 
         // Check if user exists
-        const user = await getUserByEmail(email);
+        const user = await UserModel.findOne({ email });
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
 
         // Delete user
-        await deleteUserByEmail(email);
+        await UserModel.deleteOne({ email });
 
         res.status(200).json({ message: 'User deleted successfully' });
     } catch (error) {
